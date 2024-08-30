@@ -20,6 +20,28 @@ public class Boards {
 		nextRoundsToRun();
 		howManyMovesToWinToRun();
 	}
+	public int[] findPuzzles(int lengthToFind) {
+		int totalPuzzleCount = 0;
+		for (int i=0;i<900900;i++) {
+			if (boards900900[10][i]==lengthToFind) {
+				totalPuzzleCount++;
+			}
+		}
+		int currentPuzzleAddingToArray = 0;
+		int[] puzzles = new int[totalPuzzleCount];
+		for (int i=0;i<900900;i++) {
+			if (boards900900[10][i]==lengthToFind) {
+				puzzles[currentPuzzleAddingToArray]=i;
+				currentPuzzleAddingToArray++;
+			}
+		}
+		return puzzles;
+	}
+	public void printPuzzles(int lengthToFind) {
+		for (int puzzle : findPuzzles(lengthToFind)) {
+			System.out.println(puzzle);
+		}
+	}
 	public void howManyMovesToWinToRun() {
 		while (true) {
 			boolean anyUnsolvedProblems = false;
