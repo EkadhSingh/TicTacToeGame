@@ -2,15 +2,182 @@ package threeInARowGame;
 import java.util.Arrays;
 
 public class Boards {
-	//the first 8 bytes of each code say what square each piece is in, with the first 4 being for x and the next for being for o. slot 8 says who's turn it is, with 0 being x and 1 being o. slot 9 says what the result of the position is, with 0 being undetermined (or a draw), 1 being x wins, 2 being o wins, and 3 being impossible position. If the position is winning for either x or o, slot 10 says how many more moves the winning side has to make to get 3 in a row
+	//the first 8 bytes of each code say what square each piece is in, with the first 4 being for x and the next for being for o. slot 8 says who's turn it is, with 0 being x and 1 being o. slot 9 says what the result of the position is, with 0 being undetermined (or a draw), 1 being x wins, 2 being o wins, and 3 being impossible position. If the position is winning for either x or o, slot 10 says how many more moves have to be made for the side that is winning to get three in a row assuming both sides play optimally (each sides move is counted as one move, so if it is X to move and they have to make a move, then O makes a move, then X makes a move and wins, this slot should say 3)
 	public byte[][] boards900900 = new byte[11][900900];
 	private byte[][] boards1820 = new byte[4][1820];
 	private byte[][] boards495 = new byte[4][495];
 	private short[] search1820 = new short[28561];
 	private short[] search495 = new short[6561];
 	private int boardsChanged;
-	private int roundNumber=2;
-	private int puzzleLength=3;
+	boolean x3 = false;
+	boolean y3 = false;
+	public Boards() {
+		create495Boards();
+		create1820Boards();
+		create900900Boards();
+		whosTurn();
+		firstRound();
+		nextRoundsToRun();
+		howManyMovesToWinToRun();
+	}
+	public void howManyMovesToWinToRun() {
+		while (true) {
+			boolean anyUnsolvedProblems = false;
+			for (int i=0;i<900900;i++) {
+				if (boards900900[10][i]>=100||(boards900900[9][i]!=0&&boards900900[10][i]<-1)) {
+					anyUnsolvedProblems=true;
+				}
+			}
+			if (anyUnsolvedProblems==true) {
+				howManyMovesToWin();
+			}
+			else {
+				break;
+			}
+		}
+		for(int i=0;i<900900;i++) {
+			if (boards900900[9][i]==0) {
+				boards900900[10][i]=0;	
+			}
+		}
+	}
+	public void howManyMovesToWin() {
+		int[] boards1d = new int[8];
+		for (int i=0;i<900900;i++) {
+			anyThreeInRows(i);
+			if (x3==false&&y3==false) {
+				boards1d[0]=boards900900[0][i];
+				boards1d[1]=boards900900[1][i];
+				boards1d[2]=boards900900[2][i];
+				boards1d[3]=boards900900[3][i];
+				boards1d[4]=boards900900[4][i];
+				boards1d[5]=boards900900[5][i];
+				boards1d[6]=boards900900[6][i];
+				boards1d[7]=boards900900[7][i];
+				int[] possibleBoards = new int[14];
+				byte possibleBoardNumber=0;
+				boolean[] filled = new boolean[16];
+				for (int j=0;j<8;j++) {
+					filled[boards1d[j]-1]=true;
+				}
+				if (boards900900[8][i]==0) {
+					for (int j=0;j<4;j++) {
+						
+						if (boards1d[j]>4) {
+							boards1d[j]-=4;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]+=4;
+						}
+						if (boards1d[j]!=1&&boards1d[j]!=5&&boards1d[j]!=9&&boards1d[j]!=13) {
+							boards1d[j]-=1;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]+=1;
+						}
+						if (boards1d[j]<13) {
+							boards1d[j]+=4;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]-=4;
+						}
+						if (boards1d[j]!=16&&boards1d[j]!=12&&boards1d[j]!=8&&boards1d[j]!=4) {
+							boards1d[j]+=1;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]-=1;
+						}
+					}
+				}
+				else {
+					for (int j=4;j<8;j++) {
+						
+						if (boards1d[j]>4) {
+							boards1d[j]-=4;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]+=4;
+						}
+						if (boards1d[j]!=1&&boards1d[j]!=5&&boards1d[j]!=9&&boards1d[j]!=13) {
+							boards1d[j]-=1;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]+=1;
+						}
+						if (boards1d[j]<13) {
+							boards1d[j]+=4;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]-=4;
+						}
+						if (boards1d[j]!=16&&boards1d[j]!=12&&boards1d[j]!=8&&boards1d[j]!=4) {
+							boards1d[j]+=1;
+							if (filled[boards1d[j]-1]==false) {
+								possibleBoards[possibleBoardNumber]=peiceSpotsToBoardNumber(boards1d[0],boards1d[1],boards1d[2],boards1d[3],boards1d[4],boards1d[5],boards1d[6],boards1d[7]);
+								possibleBoardNumber++;
+							}
+							boards1d[j]-=1;
+						}
+					}
+				}
+
+				if (boards900900[8][i]==0&&boards900900[9][i]==2) {
+					byte fastestWin = 0;
+					for (int j=0;j<possibleBoardNumber;j++) {
+						if (boards900900[10][possibleBoards[j]]>fastestWin&&boards900900[10][possibleBoards[j]]>=0) {
+							fastestWin=boards900900[10][possibleBoards[j]];
+						}
+					}
+					fastestWin++;
+					boards900900[10][i]=fastestWin;
+				}
+				if (boards900900[8][i]==1&&boards900900[9][i]==1) {
+					byte fastestWin = 0;
+					for (int j=0;j<possibleBoardNumber;j++) {
+						if (boards900900[10][possibleBoards[j]]>fastestWin&&boards900900[10][possibleBoards[j]]>=0) {
+							fastestWin=boards900900[10][possibleBoards[j]];
+						}
+					}
+					fastestWin++;
+					boards900900[10][i]=fastestWin;
+				}
+				if (boards900900[8][i]==0&&boards900900[9][i]==1) {
+					byte fastestWin = 100;
+					for (int j=0;j<possibleBoardNumber;j++) {
+						if (boards900900[9][possibleBoards[j]]==1&&boards900900[10][possibleBoards[j]]<fastestWin&&boards900900[10][possibleBoards[j]]>=0) {
+							fastestWin=boards900900[10][possibleBoards[j]];
+						}
+					}
+					fastestWin++;
+					boards900900[10][i]=fastestWin;
+				}
+				if (boards900900[8][i]==1&&boards900900[9][i]==2) {
+					byte fastestWin = 100;
+					for (int j=0;j<possibleBoardNumber;j++) {
+						if (boards900900[9][possibleBoards[j]]==2&&boards900900[10][possibleBoards[j]]<fastestWin&&boards900900[10][possibleBoards[j]]>=0) {
+							fastestWin=boards900900[10][possibleBoards[j]];
+						}
+					}
+					fastestWin++;
+					boards900900[10][i]=fastestWin;
+				}
+			}
+		}
+	}
 	public void howMany() {
 		int a=0;
 		for (int i=0;i<900900;i++) {
@@ -31,8 +198,7 @@ public class Boards {
 		boards1d[5]=boards900900[5][boardNumber];
 		boards1d[6]=boards900900[6][boardNumber];
 		boards1d[7]=boards900900[7][boardNumber];
-		//if this is too laggy create the arrays outside of the for loop
-		int[] possibleBoards = new int[24];
+		int[] possibleBoards = new int[14];
 		byte possibleBoardNumber=0;
 		boolean[] filled = new boolean[16];
 		for (int j=0;j<8;j++) {
@@ -112,28 +278,46 @@ public class Boards {
 				}
 			}
 		}
-		for (int j=0;j<possibleBoardNumber;j++) {
 			if (boards900900[8][boardNumber]==0) {
-				if (boards900900[9][possibleBoards[j]]==1&&boards900900[9][boardNumber]==1) {
-					System.out.print("The following board is winning:");
-					print900900Boards(possibleBoards[j]);
+				System.out.println("The following boards are winning:");
+				for (int j=0;j<possibleBoardNumber;j++) {
+					if (boards900900[9][possibleBoards[j]]==1) {
+						print900900Boards(possibleBoards[j]);
+					}
 				}
-				if (boards900900[9][possibleBoards[j]]!=2&&boards900900[9][boardNumber]!=1) {
-					System.out.print("The following board is not losing:");
-					print900900Boards(possibleBoards[j]);
+				System.out.println("The following boards are a draw:");
+				for (int j=0;j<possibleBoardNumber;j++) {
+					if (boards900900[9][possibleBoards[j]]==0) {
+						print900900Boards(possibleBoards[j]);
+					}
+				}
+				System.out.println("The following boards are losing:");
+				for (int j=0;j<possibleBoardNumber;j++) {
+					if (boards900900[9][possibleBoards[j]]==2) {
+						print900900Boards(possibleBoards[j]);
+					}
 				}
 			}
 			else {
-				if (boards900900[9][possibleBoards[j]]==2&&boards900900[9][boardNumber]==2) {
-					System.out.print("The following board is winning:");
-					print900900Boards(possibleBoards[j]);
+				System.out.println("The following boards are winning:");
+				for (int j=0;j<possibleBoardNumber;j++) {
+					if (boards900900[9][possibleBoards[j]]==2) {
+						print900900Boards(possibleBoards[j]);
+					}
 				}
-				if (boards900900[9][possibleBoards[j]]!=1&&boards900900[9][boardNumber]!=2) {
-					System.out.print("The following board is not losing:");
-					print900900Boards(possibleBoards[j]);
+				System.out.println("The following boards are a draw:");
+				for (int j=0;j<possibleBoardNumber;j++) {
+					if (boards900900[9][possibleBoards[j]]==0) {
+						print900900Boards(possibleBoards[j]);
+					}
+				}
+				System.out.println("The following boards are losing:");
+				for (int j=0;j<possibleBoardNumber;j++) {
+					if (boards900900[9][possibleBoards[j]]==1) {
+						print900900Boards(possibleBoards[j]);
+					}
 				}
 			}
-		}
 	}
 	
 	public boolean isWinning(int boardNumber, boolean solveForX) {
@@ -157,8 +341,6 @@ public class Boards {
 		do {
 			boardsChanged=0;
 			nextRounds();
-			System.out.println("Round "+roundNumber+" is done and "+boardsChanged+" boards were changed");
-			roundNumber++;
 		}while (boardsChanged>0);
 	}
 	private void nextRounds() {
@@ -173,8 +355,7 @@ public class Boards {
 				boards1d[5]=boards900900[5][i];
 				boards1d[6]=boards900900[6][i];
 				boards1d[7]=boards900900[7][i];
-				//if this is too laggy create the arrays outside of the for loop
-				int[] possibleBoards = new int[24];
+				int[] possibleBoards = new int[14];
 				byte possibleBoardNumber=0;
 				boolean[] filled = new boolean[16];
 				for (int j=0;j<8;j++) {
@@ -258,13 +439,10 @@ public class Boards {
 				for (int j=0;j<possibleBoardNumber;j++) {
 					possibleBoardsResults[j]=boards900900[9][possibleBoards[j]];
 				}
-				/*
-				for (int z=0;z<possibleBoardNumber;z++) {
-						System.out.println(possibleBoardsResults[z]);
-				}
-				*/
 				boolean is1=true;
 				boolean is2=true;
+				boolean maybe1=false;
+				boolean maybe2=false;
 				for (int j=0;j<possibleBoardNumber;j++) {
 					if (possibleBoardsResults[j]!=1) {
 						is1=false;
@@ -272,38 +450,28 @@ public class Boards {
 					if (possibleBoardsResults[j]!=2) {
 						is2=false;
 					}
-					if (boards900900[8][i]==0&&possibleBoardsResults[j]==1&&boards900900[9][i]==0) {
-						boards900900[9][i]=1;
-						boards900900[10][i]=(byte)(roundNumber/2);
-						boardsChanged++;
-						if (roundNumber==puzzleLength*2&&(boards900900[8][i]+1)==boards900900[9][i]) {
-							//System.out.println(i+" is a puzzle");
-						}
+					if (possibleBoardsResults[j]==1) {
+						maybe1=true;
 					}
-					if (boards900900[8][i]==1&&possibleBoardsResults[j]==2&&boards900900[9][i]==0) {
-						boards900900[9][i]=2;
-						boards900900[10][i]=(byte)(roundNumber/2);
-						boardsChanged++;
-						if (roundNumber==puzzleLength*2&&(boards900900[8][i]+1)==boards900900[9][i]) {
-							//System.out.println(i+" is a puzzle");
-						}
+					if (possibleBoardsResults[j]==2) {
+						maybe2=true;
 					}
 				}
-				if (boards900900[8][i]==0&&is2==true&&boards900900[9][i]==0) {
-					boards900900[9][i]=2;
-					boards900900[10][i]=(byte)(roundNumber/2);
+				if (boards900900[8][i]==0&&is2==true) {
+					boards900900[9][i]=2;	
 					boardsChanged++;
-					if (roundNumber==puzzleLength*2&&(boards900900[8][i]+1)==boards900900[9][i]) {
-						//System.out.println(i+" is a puzzle");
-					}
 				}
-				if (boards900900[8][i]==1&&is1==true&&boards900900[9][i]==0) {
+				if (boards900900[8][i]==1&&is1==true) {
 					boards900900[9][i]=1;
-					boards900900[10][i]=(byte)(roundNumber/2);
 					boardsChanged++;
-					if (roundNumber==puzzleLength*2&&(boards900900[8][i]+1)==boards900900[9][i]) {
-						//System.out.println(i+" is a puzzle");
-					}
+				}
+				if (boards900900[8][i]==0&&maybe1==true) {
+					boards900900[9][i]=1;
+					boardsChanged++;
+				}
+				if (boards900900[8][i]==1&&maybe2==true) {
+					boards900900[9][i]=2;
+					boardsChanged++;
 				}
 				
 			}
@@ -416,6 +584,9 @@ public class Boards {
 				}
 			}
 		}
+		for(int i=0;i<900900;i++) {
+			boards900900[10][i]=-128;
+		}
 	}
 	public void whosTurn() {
 		for (int i=0;i<900900;i++) {
@@ -427,169 +598,174 @@ public class Boards {
 			}
 		}
 	}
+	public void anyThreeInRows(int z) {
+		x3 = false;
+		y3 = false;
+		byte a=boards900900[0][z];
+		byte b=boards900900[1][z];
+		byte c=boards900900[2][z];
+		byte d=boards900900[3][z];
+		boolean[] filled = new boolean[16];
+		for (int i=1;i<=16;i++) {
+		if (a==i || b==i || c==i || d==i) {
+		filled[i-1]=true;
+		}
+		}
+		if (a!=1&&a!=4&&a!=13&&a!=16) {
+		if (a==6||a==7||a==10||a==11) {
+		if (filled[a-6]==true&&filled[a+4]==true) {
+			x3=true;
+		}
+		if (filled[a-4]==true&&filled[a+2]==true) {
+			x3=true;
+		}
+		}
+		if (a>4&&a<13&&filled[a-5]==true&&filled[a+3]==true) {
+			x3=true;
+		}
+		if (a!=5&&a!=8&&a!=9&&a!=12&&filled[a-2]==true&&filled[a]==true) {
+			x3=true;
+		}
+		}
+		if (b!=1&&b!=4&&b!=13&&b!=16) {
+		if (b==6||b==7||b==10||b==11) {
+		if (filled[b-6]==true&&filled[b+4]==true) {
+			x3=true;
+		}
+		if (filled[b-4]==true&&filled[b+2]==true) {
+			x3=true;
+		}
+		}
+		if (b>4&&b<13&&filled[b-5]==true&&filled[b+3]==true) {
+			x3=true;
+		}
+		if (b!=5&&b!=8&&b!=9&&b!=12&&filled[b-2]==true&&filled[b]==true) {
+			x3=true;
+		}
+		}
+		if (c!=1&&c!=4&&c!=13&&c!=16) {
+		if (c==6||c==7||c==10||c==11) {
+		if (filled[c-6]==true&&filled[c+4]==true) {
+			x3=true;
+		}
+		if (filled[c-4]==true&&filled[c+2]==true) {
+			x3=true;
+		}
+		}
+		if (c>4&&c<13&&filled[c-5]==true&&filled[c+3]==true) {
+			x3=true;
+		}
+		if (c!=5&&c!=8&&c!=9&&c!=12&&filled[c-2]==true&&filled[c]==true) {
+			x3=true;
+		}
+		}
+		if (d!=1&&d!=4&&d!=13&&d!=16) {
+		if (d==6||d==7||d==10||d==11) {
+		if (filled[d-6]==true&&filled[d+4]==true) {
+			x3=true;
+		}
+		if (filled[d-4]==true&&filled[d+2]==true) {
+			x3=true;
+		}
+		}
+		if (d>4&&d<13&&filled[d-5]==true&&filled[d+3]==true) {
+			x3=true;
+		}
+		if (d!=5&&d!=8&&d!=9&&d!=12&&filled[d-2]==true&&filled[d]==true) {
+			x3=true;
+		}
+		}
+		byte a2=boards900900[4][z];
+		byte b2=boards900900[5][z];
+		byte c2=boards900900[6][z];
+		byte d2=boards900900[7][z];
+		boolean[] filled2 = new boolean[16];
+		for (int i=1;i<=16;i++) {
+		if (a2==i || b2==i || c2==i || d2==i) {
+		filled2[i-1]=true;
+		}
+		}
+		if (a2!=1&&a2!=4&&a2!=13&&a2!=16) {
+		if (a2==6||a2==7||a2==10||a2==11) {
+		if (filled2[a2-6]==true&&filled2[a2+4]==true) {
+			y3=true;
+		}
+		if (filled2[a2-4]==true&&filled2[a2+2]==true) {
+			y3=true;
+		}
+		}
+		if (a2>4&&a2<13&&filled2[a2-5]==true&&filled2[a2+3]==true) {
+			y3=true;
+		}
+		if (a2!=5&&a2!=8&&a2!=9&&a2!=12&&filled2[a2-2]==true&&filled2[a2]==true) {
+			y3=true;
+		}
+		}
+		if (b2!=1&&b2!=4&&b2!=13&&b2!=16) {
+		if (b2==6||b2==7||b2==10||b2==11) {
+		if (filled2[b2-6]==true&&filled2[b2+4]==true) {
+			y3=true;
+		}
+		if (filled2[b2-4]==true&&filled2[b2+2]==true) {
+			y3=true;
+		}
+		}
+		if (b2>4&&b2<13&&filled2[b2-5]==true&&filled2[b2+3]==true) {
+			y3=true;
+		}
+		if (b2!=5&&b2!=8&&b2!=9&&b2!=12&&filled2[b2-2]==true&&filled2[b2]==true) {
+			y3=true;
+		}
+		}
+		if (c2!=1&&c2!=4&&c2!=13&&c2!=16) {
+		if (c2==6||c2==7||c2==10||c2==11) {
+		if (filled2[c2-6]==true&&filled2[c2+4]==true) {
+			y3=true;
+		}
+		if (filled2[c2-4]==true&&filled2[c2+2]==true) {
+			y3=true;
+		}
+		}
+		if (c2>4&&c2<13&&filled2[c2-5]==true&&filled2[c2+3]==true) {
+			y3=true;
+		}
+		if (c2!=5&&c2!=8&&c2!=9&&c2!=12&&filled2[c2-2]==true&&filled2[c2]==true) {
+			y3=true;
+		}
+		}
+		if (d2!=1&&d2!=4&&d2!=13&&d2!=16) {
+		if (d2==6||d2==7||d2==10||d2==11) {
+		if (filled2[d2-6]==true&&filled2[d2+4]==true) {
+			y3=true;
+		}
+		if (filled2[d2-4]==true&&filled2[d2+2]==true) {
+			y3=true;
+		}
+		}
+		if (d2>4&&d2<13&&filled2[d2-5]==true&&filled2[d2+3]==true) {
+			y3=true;
+		}
+		if (d2!=5&&d2!=8&&d2!=9&&d2!=12&&filled2[d2-2]==true&&filled2[d2]==true) {
+			y3=true;
+		}
+		}
+	}
 	public void firstRound() {
 		for (int z=0;z<900900;z++) {
-			boolean x3 = false;
-			boolean y3 = false;
-			byte a=boards900900[0][z];
-			byte b=boards900900[1][z];
-			byte c=boards900900[2][z];
-			byte d=boards900900[3][z];
-			boolean[] filled = new boolean[16];
-			for (int i=1;i<=16;i++) {
-			if (a==i || b==i || c==i || d==i) {
-			filled[i-1]=true;
-			}
-			}
-			if (a!=1&&a!=4&&a!=13&&a!=16) {
-			if (a==6||a==7||a==10||a==11) {
-			if (filled[a-6]==true&&filled[a+4]==true) {
-				x3=true;
-			}
-			if (filled[a-4]==true&&filled[a+2]==true) {
-				x3=true;
-			}
-			}
-			if (a>4&&a<13&&filled[a-5]==true&&filled[a+3]==true) {
-				x3=true;
-			}
-			if (a!=5&&a!=8&&a!=9&&a!=12&&filled[a-2]==true&&filled[a]==true) {
-				x3=true;
-			}
-			}
-			if (b!=1&&b!=4&&b!=13&&b!=16) {
-			if (b==6||b==7||b==10||b==11) {
-			if (filled[b-6]==true&&filled[b+4]==true) {
-				x3=true;
-			}
-			if (filled[b-4]==true&&filled[b+2]==true) {
-				x3=true;
-			}
-			}
-			if (b>4&&b<13&&filled[b-5]==true&&filled[b+3]==true) {
-				x3=true;
-			}
-			if (b!=5&&b!=8&&b!=9&&b!=12&&filled[b-2]==true&&filled[b]==true) {
-				x3=true;
-			}
-			}
-			if (c!=1&&c!=4&&c!=13&&c!=16) {
-			if (c==6||c==7||c==10||c==11) {
-			if (filled[c-6]==true&&filled[c+4]==true) {
-				x3=true;
-			}
-			if (filled[c-4]==true&&filled[c+2]==true) {
-				x3=true;
-			}
-			}
-			if (c>4&&c<13&&filled[c-5]==true&&filled[c+3]==true) {
-				x3=true;
-			}
-			if (c!=5&&c!=8&&c!=9&&c!=12&&filled[c-2]==true&&filled[c]==true) {
-				x3=true;
-			}
-			}
-			if (d!=1&&d!=4&&d!=13&&d!=16) {
-			if (d==6||d==7||d==10||d==11) {
-			if (filled[d-6]==true&&filled[d+4]==true) {
-				x3=true;
-			}
-			if (filled[d-4]==true&&filled[d+2]==true) {
-				x3=true;
-			}
-			}
-			if (d>4&&d<13&&filled[d-5]==true&&filled[d+3]==true) {
-				x3=true;
-			}
-			if (d!=5&&d!=8&&d!=9&&d!=12&&filled[d-2]==true&&filled[d]==true) {
-				x3=true;
-			}
-			}
-			byte a2=boards900900[4][z];
-			byte b2=boards900900[5][z];
-			byte c2=boards900900[6][z];
-			byte d2=boards900900[7][z];
-			boolean[] filled2 = new boolean[16];
-			for (int i=1;i<=16;i++) {
-			if (a2==i || b2==i || c2==i || d2==i) {
-			filled2[i-1]=true;
-			}
-			}
-			if (a2!=1&&a2!=4&&a2!=13&&a2!=16) {
-			if (a2==6||a2==7||a2==10||a2==11) {
-			if (filled2[a2-6]==true&&filled2[a2+4]==true) {
-				y3=true;
-			}
-			if (filled2[a2-4]==true&&filled2[a2+2]==true) {
-				y3=true;
-			}
-			}
-			if (a2>4&&a2<13&&filled2[a2-5]==true&&filled2[a2+3]==true) {
-				y3=true;
-			}
-			if (a2!=5&&a2!=8&&a2!=9&&a2!=12&&filled2[a2-2]==true&&filled2[a2]==true) {
-				y3=true;
-			}
-			}
-			if (b2!=1&&b2!=4&&b2!=13&&b2!=16) {
-			if (b2==6||b2==7||b2==10||b2==11) {
-			if (filled2[b2-6]==true&&filled2[b2+4]==true) {
-				y3=true;
-			}
-			if (filled2[b2-4]==true&&filled2[b2+2]==true) {
-				y3=true;
-			}
-			}
-			if (b2>4&&b2<13&&filled2[b2-5]==true&&filled2[b2+3]==true) {
-				y3=true;
-			}
-			if (b2!=5&&b2!=8&&b2!=9&&b2!=12&&filled2[b2-2]==true&&filled2[b2]==true) {
-				y3=true;
-			}
-			}
-			if (c2!=1&&c2!=4&&c2!=13&&c2!=16) {
-			if (c2==6||c2==7||c2==10||c2==11) {
-			if (filled2[c2-6]==true&&filled2[c2+4]==true) {
-				y3=true;
-			}
-			if (filled2[c2-4]==true&&filled2[c2+2]==true) {
-				y3=true;
-			}
-			}
-			if (c2>4&&c2<13&&filled2[c2-5]==true&&filled2[c2+3]==true) {
-				y3=true;
-			}
-			if (c2!=5&&c2!=8&&c2!=9&&c2!=12&&filled2[c2-2]==true&&filled2[c2]==true) {
-				y3=true;
-			}
-			}
-			if (d2!=1&&d2!=4&&d2!=13&&d2!=16) {
-			if (d2==6||d2==7||d2==10||d2==11) {
-			if (filled2[d2-6]==true&&filled2[d2+4]==true) {
-				y3=true;
-			}
-			if (filled2[d2-4]==true&&filled2[d2+2]==true) {
-				y3=true;
-			}
-			}
-			if (d2>4&&d2<13&&filled2[d2-5]==true&&filled2[d2+3]==true) {
-				y3=true;
-			}
-			if (d2!=5&&d2!=8&&d2!=9&&d2!=12&&filled2[d2-2]==true&&filled2[d2]==true) {
-				y3=true;
-			}
-			}
+			anyThreeInRows(z);
 			if (x3==true&&y3==true) {
 				boards900900[9][z]=3;
+				boards900900[10][z]=0;
 			}
 			else if (x3==true) {
 				boards900900[9][z]=1;
+				boards900900[10][z]=0;
 			}
 			else if (y3==true) {
 				boards900900[9][z]=2;
+				boards900900[10][z]=0;
 			}
 		}
-		System.out.println("Round 1 is done");
 	}
 	public void print495Boards(int boardNumber) {
 		for (byte z=0;z<4;z++) {
