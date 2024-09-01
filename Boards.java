@@ -20,7 +20,7 @@ public class Boards {
 		nextRoundsToRun();
 		howManyMovesToWinToRun();
 	}
-	public int[] findPuzzles(int lengthToFind) {
+	private int[] findPuzzles(int lengthToFind) {
 		int totalPuzzleCount = 0;
 		for (int i=0;i<900900;i++) {
 			if (boards900900[10][i]==lengthToFind) {
@@ -42,7 +42,7 @@ public class Boards {
 			System.out.println(puzzle);
 		}
 	}
-	public void howManyMovesToWinToRun() {
+	private void howManyMovesToWinToRun() {
 		while (true) {
 			boolean anyUnsolvedProblems = false;
 			for (int i=0;i<900900;i++) {
@@ -63,7 +63,7 @@ public class Boards {
 			}
 		}
 	}
-	public void howManyMovesToWin() {
+	private void howManyMovesToWin() {
 		int[] boards1d = new int[8];
 		for (int i=0;i<900900;i++) {
 			anyThreeInRows(i);
@@ -200,7 +200,7 @@ public class Boards {
 			}
 		}
 	}
-	public void howMany() {
+	public void howManyUnsolvedBoards() {
 		int a=0;
 		for (int i=0;i<900900;i++) {
 			if (boards900900[9][i]==0) {
@@ -210,7 +210,7 @@ public class Boards {
 		System.out.println("the amount of boards without a solution is "+a);
 	}
 	
-	public void bestMoves(int boardNumber) {
+	private int[] findPossibleMoves(int boardNumber) {
 		int[] boards1d = new int[8];
 		boards1d[0]=boards900900[0][boardNumber];
 		boards1d[1]=boards900900[1][boardNumber];
@@ -300,66 +300,86 @@ public class Boards {
 				}
 			}
 		}
-			if (boards900900[8][boardNumber]==0) {
-				System.out.println("The following boards are winning:");
-				for (int j=0;j<possibleBoardNumber;j++) {
-					if (boards900900[9][possibleBoards[j]]==1) {
-						print900900Boards(possibleBoards[j]);
-					}
-				}
-				System.out.println("The following boards are a draw:");
-				for (int j=0;j<possibleBoardNumber;j++) {
-					if (boards900900[9][possibleBoards[j]]==0) {
-						print900900Boards(possibleBoards[j]);
-					}
-				}
-				System.out.println("The following boards are losing:");
-				for (int j=0;j<possibleBoardNumber;j++) {
-					if (boards900900[9][possibleBoards[j]]==2) {
-						print900900Boards(possibleBoards[j]);
-					}
-				}
-			}
-			else {
-				System.out.println("The following boards are winning:");
-				for (int j=0;j<possibleBoardNumber;j++) {
-					if (boards900900[9][possibleBoards[j]]==2) {
-						print900900Boards(possibleBoards[j]);
-					}
-				}
-				System.out.println("The following boards are a draw:");
-				for (int j=0;j<possibleBoardNumber;j++) {
-					if (boards900900[9][possibleBoards[j]]==0) {
-						print900900Boards(possibleBoards[j]);
-					}
-				}
-				System.out.println("The following boards are losing:");
-				for (int j=0;j<possibleBoardNumber;j++) {
-					if (boards900900[9][possibleBoards[j]]==1) {
-						print900900Boards(possibleBoards[j]);
-					}
-				}
-			}
+		int[] possibleBoardsOutput = new int[possibleBoardNumber];
+		for (int j=0;j<possibleBoardNumber;j++) {
+			possibleBoardsOutput[j]=possibleBoards[j];
+		}
+		return possibleBoardsOutput;
 	}
 	
-	public boolean isWinning(int boardNumber, boolean solveForX) {
-		//initially setting this to true does nothing, it just avoids errors
-		boolean winningOrNot=true;
-		if (boards900900[9][boardNumber]==1&&solveForX==true) {
-			winningOrNot=true;
-		}
-		else if (boards900900[9][boardNumber]!=1&&solveForX==true) {
-			winningOrNot=false;
-		}
-		else if (boards900900[9][boardNumber]==2&&solveForX==false) {
-			winningOrNot=true;
-		}
-		else if (boards900900[9][boardNumber]!=2&&solveForX==false) {
-			winningOrNot=false;
-		}
-		return winningOrNot;
+	public void printPossibleMoves(int boardNumber) {
+		int[] possibleBoards = findPossibleMoves(boardNumber);
+			System.out.println("The following boards are winning:");
+			for (int j=0;j<possibleBoards.length;j++) {
+				if (isCurrentPlayerWinning(possibleBoards[j])==-1) {
+					print900900Boards(possibleBoards[j]);
+				}
+			}
+			System.out.println("The following boards are a draw:");
+			for (int j=0;j<possibleBoards.length;j++) {
+				if (isCurrentPlayerWinning(possibleBoards[j])==0) {
+					print900900Boards(possibleBoards[j]);
+				}
+			}
+			System.out.println("The following boards are losing:");
+			for (int j=0;j<possibleBoards.length;j++) {
+				if (isCurrentPlayerWinning(possibleBoards[j])==1) {
+					print900900Boards(possibleBoards[j]);
+				}
+			}
 	}
-	public void nextRoundsToRun() {
+
+	public void printBestMove(int boardNumber) {
+		int[] possibleBoards = findPossibleMoves(boardNumber);
+		boolean canWin=false;
+		boolean canDraw=false;
+		byte fastestWin=127;
+		byte slowestLoss=0;
+		for(int i=0;i<possibleBoards.length;i++) {
+			if (isCurrentPlayerWinning(possibleBoards[i])==-1) {
+				canWin=true;
+				if (boards900900[10][possibleBoards[i]]<fastestWin) {
+					fastestWin=boards900900[10][possibleBoards[i]];
+				}
+			}
+			else if (isCurrentPlayerWinning(possibleBoards[i])==0) {
+				canDraw=true;
+			}
+			else {
+				if (boards900900[10][possibleBoards[i]]>slowestLoss) {
+					slowestLoss=boards900900[10][possibleBoards[i]];
+				}
+			}
+		}
+		System.out.println("The best move(s):");
+		for (int i=0;i<possibleBoards.length;i++) {
+			if (canWin==true&&boards900900[10][possibleBoards[i]]==fastestWin&&isCurrentPlayerWinning(possibleBoards[i])==-1) {
+				print900900Boards(possibleBoards[i]);
+			}
+			else if (canWin==false&&canDraw==true&&isCurrentPlayerWinning(possibleBoards[i])==0) {
+				print900900Boards(possibleBoards[i]);
+			}
+			else if (canWin==false&&canDraw==false&&boards900900[10][possibleBoards[i]]==slowestLoss&&isCurrentPlayerWinning(possibleBoards[i])==1) {
+				print900900Boards(possibleBoards[i]);
+			}
+		}
+	}
+
+	private int isCurrentPlayerWinning(int boardNumber) {
+		int winningStatus = 0; //Initializing this just to avoid an error, also -1 if losing, 0 if draw, 1 if winning
+		if ((boards900900[8][boardNumber]==0&&boards900900[9][boardNumber]==1)||(boards900900[8][boardNumber]==1&&boards900900[9][boardNumber]==2)) {
+			winningStatus = 1;
+		}
+		else if (boards900900[9][boardNumber]==0) {
+			winningStatus = 0;
+		}
+		else {
+			winningStatus = -1;
+		}
+		return winningStatus;
+	}
+
+	private void nextRoundsToRun() {
 		do {
 			boardsChanged=0;
 			nextRounds();
@@ -499,6 +519,9 @@ public class Boards {
 			}
 		}
 	}
+	public int peiceSpotsToBoardNumber(int[] input) {
+		return peiceSpotsToBoardNumber(input[0],input[1],input[2],input[3],input[4],input[5],input[6],input[7]);
+	}
 	public int peiceSpotsToBoardNumber(int a, int b, int c, int d, int e, int f,int g, int h) {
 		int[] y = {a,b,c,d};
 		int[] z = {e,f,g,h};
@@ -556,7 +579,7 @@ public class Boards {
 		boardNumber+=search495[(h-4)+9*((g-3)+9*((f-2)+9*(e-1)))];
 		return boardNumber;
 	}
-	public void create1820Boards() {
+	private void create1820Boards() {
 		short boardNumber = 0;
 		for (byte i=1;i<=13;i++) {
 			for (byte j=(byte)(i+1);j<=14;j++) {
@@ -573,7 +596,7 @@ public class Boards {
 			}
 		}
 	}
-	public void create495Boards() {
+	private void create495Boards() {
 		short boardNumber = 0;
 		for (byte i=1;i<=9;i++) {
 			for (byte j=(byte)(i+1);j<=10;j++) {
@@ -590,7 +613,7 @@ public class Boards {
 			}
 		}
 	}
-	public void create900900Boards() {
+	private void create900900Boards() {
 		for (short i=0;i<1820;i++) {
 			for (short j=0;j<495;j++) {
 				for (byte y=4;y<8;y++) {
@@ -610,7 +633,7 @@ public class Boards {
 			boards900900[10][i]=-128;
 		}
 	}
-	public void whosTurn() {
+	private void whosTurn() {
 		for (int i=0;i<900900;i++) {
 			if(((boards900900[0][i]-1)/4+(boards900900[0][i]-1)%4+(boards900900[1][i]-1)/4+(boards900900[1][i]-1)%4+(boards900900[2][i]-1)/4+(boards900900[2][i]-1)%4+(boards900900[3][i]-1)/4+(boards900900[3][i]-1)%4+(boards900900[4][i]-1)/4+(boards900900[4][i]-1)%4+(boards900900[5][i]-1)/4+(boards900900[5][i]-1)%4+(boards900900[6][i]-1)/4+(boards900900[6][i]-1)%4+(boards900900[7][i]-1)/4+(boards900900[7][i]-1)%4)%2==0) {
 				boards900900[8][i]=0;
@@ -620,7 +643,7 @@ public class Boards {
 			}
 		}
 	}
-	public void anyThreeInRows(int z) {
+	private void anyThreeInRows(int z) {
 		x3 = false;
 		y3 = false;
 		byte a=boards900900[0][z];
@@ -772,7 +795,7 @@ public class Boards {
 		}
 		}
 	}
-	public void firstRound() {
+	private void firstRound() {
 		for (int z=0;z<900900;z++) {
 			anyThreeInRows(z);
 			if (x3==true&&y3==true) {
